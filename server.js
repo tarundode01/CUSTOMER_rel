@@ -13,8 +13,16 @@ app.use(express.json());
 
 // Database connection middleware for serverless/local
 app.use(async (req, res, next) => {
-  await connectDB();
-  next();
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Database connection failed. Please ensure MONGODB_URI is configured and Atlas Network Access (0.0.0.0/0) is enabled.',
+      error: error.message
+    });
+  }
 });
 
 // Base route
@@ -28,6 +36,15 @@ app.get('/', (req, res) => {
       admin: '/api/admin',
       sales: '/api/sales'
     }
+  });
+});
+
+// Health check / DB status test route
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    dbState: require('mongoose').connection.readyState === 1 ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString()
   });
 });
 

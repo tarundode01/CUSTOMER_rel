@@ -3,19 +3,26 @@ const mongoose = require('mongoose');
 let isConnected = false;
 
 const connectDB = async () => {
-  if (isConnected || mongoose.connection.readyState === 1) {
+  if (mongoose.connection.readyState === 1) {
     return;
   }
 
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.error('CRITICAL: MONGODB_URI is not defined in environment variables!');
+    throw new Error('MONGODB_URI is not defined in environment variables');
+  }
+
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000
+    const conn = await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 8000,
+      bufferCommands: false
     });
     isConnected = true;
     console.log(`MongoDB Atlas Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);
-    // Do not process.exit(1) in serverless environments
+    throw error;
   }
 };
 
